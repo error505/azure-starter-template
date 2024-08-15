@@ -83,3 +83,6 @@ To deploy the Azure Function to your Azure environment:
 - **Create an Azure Function App using the Azure Portal or Azure CLI.**
 - **Configure the application settings (ServiceBusConnectionString, CosmosDBConnectionString, AzureWebJobsStorage).**
 - **Deploy the function code using Visual Studio, GitHub Actions, or Azure CLI.**
+
+### License
+This project is licensed under the MIT License - see the LICENSE file for details.
