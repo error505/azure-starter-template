@@ -1,0 +1,346 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "aadClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD Application Client ID"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-06-01",
+      "name": "itdapp-prod-vnet01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": ["10.0.0.0/16"]
+        },
+        "subnets": [
+          {
+            "name": "subnet-web",
+            "properties": {
+              "addressPrefix": "10.0.1.0/24"
+            }
+          },
+          {
+            "name": "subnet-app",
+            "properties": {
+              "addressPrefix": "10.0.2.0/24"
+            }
+          },
+          {
+            "name": "subnet-db",
+            "properties": {
+              "addressPrefix": "10.0.3.0/24"
+            }
+          },
+          {
+            "name": "subnet-func",
+            "properties": {
+              "addressPrefix": "10.0.4.0/24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-06-01",
+      "name": "itdapp-prod-nsg01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowHTTP",
+            "properties": {
+              "priority": 1000,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "80"
+            }
+          },
+          {
+            "name": "AllowHTTPS",
+            "properties": {
+              "priority": 1100,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "443"
+            }
+          },
+          {
+            "name": "DenyAllInbound",
+            "properties": {
+              "priority": 2000,
+              "protocol": "*",
+              "access": "Deny",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2021-03-01",
+      "name": "itdapp-prod-asp01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      },
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "itdapp-prod-appinsights01",
+      "location": "[resourceGroup().location]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web"
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2019-09-01",
+      "name": "itdapp-prod-keyvault01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "accessPolicies": [],
+        "tenantId": "[subscription().tenantId]",
+        "enabledForDeployment": true,
+        "enabledForDiskEncryption": true,
+        "enabledForTemplateDeployment": true
+      }
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces",
+      "apiVersion": "2023-01-01-preview",
+      "name": "itdapp-prod-sbnamespace",
+      "location": "westeurope",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "zoneRedundant": false
+      }
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces/topics",
+      "apiVersion": "2023-01-01-preview",
+      "name": "itdapp-prod-sbnamespace/itdapp-prod-topic01",
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', 'itdapp-prod-sbnamespace')]"
+      ],
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2021-01-15",
+      "name": "itdapp-prod-app01",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', 'itdapp-prod-asp01')]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'itdapp-prod-asp01')]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "ipSecurityRestrictions": [
+            {
+              "ipAddress": "192.168.1.0/24",
+              "action": "Allow",
+              "tag": "Default",
+              "priority": 100,
+              "name": "AllowSubnet"
+            },
+            {
+              "ipAddress": "0.0.0.0/0",
+              "action": "Deny",
+              "priority": 200,
+              "name": "DenyAll"
+            }
+          ],
+          "appSettings": [
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('Microsoft.Insights/components', 'itdapp-prod-appinsights01')).InstrumentationKey]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', 'itdapp-prod-appinsights01')).ConnectionString]"
+            },
+            {
+              "name": "SERVICE_BUS_CONNECTION_STRING",
+              "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/authorizationRules', 'itdapp-prod-sbnamespace', 'RootManageSharedAccessKey'), '2023-01-01-preview').primaryConnectionString]"
+            },
+            {
+              "name": "KEY_VAULT_URI",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', 'itdapp-prod-keyvault01')).vaultUri]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2021-01-15",
+      "name": "itdapp-prod-app01/authsettingsV2",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', 'itdapp-prod-app01')]"
+      ],
+      "properties": {
+        "platform": {
+          "enabled": true,
+          "runtimeVersion": "~3"
+        },
+        "identityProviders": {
+          "azureActiveDirectory": {
+            "enabled": true,
+            "registration": {
+              "clientId": "[parameters('aadClientId')]",
+              "clientSecretSettingName": "AADClientSecret"
+            },
+            "login": {
+              "loginParameters": [
+                "response_type=code id_token",
+                "scope=openid profile email"
+              ],
+              "disableWWWAuthenticate": false
+            }
+          }
+        },
+        "globalValidation": {
+          "requireAuthentication": true,
+          "unauthenticatedClientAction": "RedirectToLoginPage"
+        },
+        "login": {
+          "preserveUrlFragmentsForLogins": true
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2021-06-15",
+      "name": "itdapp-prod-cosmosdb01",
+      "location": "[resourceGroup().location]",
+      "kind": "GlobalDocumentDB",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "locations": [
+          {
+            "locationName": "[resourceGroup().location]",
+            "failoverPriority": 0
+          }
+        ],
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Web/staticSites",
+      "apiVersion": "2021-02-01",
+      "name": "itdapp-prod-staticweb01",
+      "location": "westeurope",
+      "properties": {
+        "repositoryUrl": "https://github.com/your-repi/your-repo.git",
+        "branch": "main",
+        "repositoryToken": "your-repo-token",
+        "appLocation": "/",
+        "apiLocation": "api",
+        "outputLocation": "build",
+        "defaultHostname": "your-hostname"
+      },
+      "sku": {
+        "name": "Free"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-06-01",
+      "name": "itdappprodstorage01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "supportsHttpsTrafficOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2021-03-01",
+      "name": "itdapp-prod-function01",
+      "location": "[resourceGroup().location]",
+      "kind": "functionapp",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', 'itdapp-prod-asp01')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', 'itdappprodstorage01')]",
+        "[resourceId('Microsoft.ServiceBus/namespaces', 'itdapp-prod-sbnamespace')]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/topics', 'itdapp-prod-sbnamespace', 'itdapp-prod-topic01')]",
+        "[resourceId('Microsoft.Insights/components', 'itdapp-prod-appinsights01')]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'itdapp-prod-asp01')]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', 'itdappprodstorage01', ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', 'itdappprodstorage01'), '2021-06-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "SERVICE_BUS_CONNECTION_STRING",
+              "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/authorizationRules', 'itdapp-prod-sbnamespace', 'RootManageSharedAccessKey'), '2023-01-01-preview').primaryConnectionString]"
+            },
+            {
+              "name": "COSMOS_DB_CONNECTION_STRING",
+              "value": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', 'itdapp-prod-cosmosdb01'), '2021-06-15').primaryMasterKey]"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('Microsoft.Insights/components', 'itdapp-prod-appinsights01')).InstrumentationKey]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', 'itdapp-prod-appinsights01')).ConnectionString]"
+            }
+          ],
+          "ftpsState": "FtpsOnly",
+          "minTlsVersion": "1.2"
+        },
+        "httpsOnly": true
+      }
+    }    
+  ]
+}
