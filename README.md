@@ -1,6 +1,7 @@
 # Kickstart Azure Infrastructure Template
 
 This repository contains an ARM template designed to kickstart a secure, scalable, and efficient infrastructure on Azure. The infrastructure includes a Static Web App, Azure App Service, Azure Function, Cosmos DB, Key Vault, Application Insights, and other essential components. This setup is designed with security, scalability, and monitoring in mind, making it an ideal starting point for production-grade applications.
+![image](https://github.com/user-attachments/assets/3ceebb64-16d8-45dd-8d40-7af09b2b2c37)
 
 ## Features
 
