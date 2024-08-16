@@ -104,8 +104,10 @@ graph TD
 To deploy this template:
 
 1. Clone this repository.
-2. Customize the parameters in the ARM template if needed.
-3. Deploy the template using Azure CLI, PowerShell, or the Azure Portal.
+2. Customize the parameters in the ARM template as needed.
+3. Add your GitHub Access token and Repo URL for the Static Web Site deployment.
+4. Register your app at Entra ID needed for the 2FA.
+5. Deploy the template using Azure CLI, PowerShell, or the Azure Portal.
 
 ### Deployment Commands
 
