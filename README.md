@@ -8,6 +8,7 @@ This repository contains an ARM template designed to kickstart a secure, scalabl
 - **Static Web App**: Serves static content with secure access through IP whitelisting and 2FA.
 - **Azure App Service**: Hosts the main web application, secured with HTTPS only and Azure AD authentication.
 - **Azure Function**: Handles backend processing with pay-as-you-go consumption plan, integrated with Service Bus and Cosmos DB.
+- **Azure Service Bus**: Acts as a message hub between the Azure App Service and Azure Function, enabling reliable message-based communication.
 - **Azure Cosmos DB**: Stores application data with session consistency and private endpoint access.
 - **Azure Key Vault**: Manages secrets with secure access from the web app and function app.
 - **Application Insights**: Provides monitoring and diagnostics for the App Service and Function App.
@@ -83,16 +84,19 @@ graph TD
 #### 3. **Azure Function App**
    - Handles backend processing using a consumption plan. It processes messages from the Azure Service Bus and interacts with Cosmos DB for data storage.
 
-#### 4. **Azure Cosmos DB**
+#### 4. **Azure Service Bus**
+   - Serves as the message hub between the Azure App Service and Azure Function, ensuring reliable and scalable communication between these services.
+
+#### 5. **Azure Cosmos DB**
    - Provides scalable, globally distributed database services with session consistency and secure access via private endpoints.
 
-#### 5. **Azure Key Vault**
+#### 6. **Azure Key Vault**
    - Manages sensitive information like connection strings and secrets, accessible only by the App Service and Function App.
 
-#### 6. **Application Insights**
+#### 7. **Application Insights**
    - Integrated into both the Azure App Service and Azure Function App to provide real-time monitoring and diagnostics.
 
-#### 7. **Network Security**
+#### 8. **Network Security**
    - Network Security Groups (NSGs) are applied to control traffic at the subnet level, ensuring that only authorized traffic can access the resources.
 
 ## Getting Started
