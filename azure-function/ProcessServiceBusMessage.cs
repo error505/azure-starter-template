@@ -3,7 +3,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
-namespace Azure_Infra___Azure_Function
+namespace azure_function
 {
     public class ProcessServiceBusMessage
     {
