@@ -1,20 +1,31 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();  // Updated for handling views
+builder.Services.AddRazorPages();  // Required for handling authentication UI
 
 // Retrieve the ClientId from configuration
 var clientId = builder.Configuration["AzureAd:ClientId"];
 
 // Configure Azure AD Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"))  // For API requests
+    .EnableTokenAcquisitionToCallDownstreamApi()
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))  // For login flows
+    .AddInMemoryTokenCaches();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = options.DefaultPolicy;
+});
 
 // Configure Swagger with OAuth2 and dynamic scope
 builder.Services.AddSwaggerGen(c =>
@@ -67,16 +78,20 @@ if (app.Environment.IsDevelopment())
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
         c.RoutePrefix = string.Empty;
-        c.OAuthClientId(clientId);  // Use ClientId from configuration
+        c.OAuthClientId(clientId);
         c.OAuthUsePkce();
     });
 }
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();  // Required for serving static files like CSS/JS for the login page
+app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapRazorPages();  // Ensures the login flow can work
 app.MapControllers();
 
 app.Run();
