@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
@@ -9,17 +8,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllersWithViews();  // Updated for handling views
-builder.Services.AddRazorPages();  // Required for handling authentication UI
+builder.Services.AddControllersWithViews();  // Needed for views and Razor Pages
+builder.Services.AddRazorPages();  // Needed for Razor Pages (for UI)
 
-// Retrieve the ClientId from configuration
 var clientId = builder.Configuration["AzureAd:ClientId"];
 
-// Configure Azure AD Authentication
+// Configure API authentication using JWT Bearer tokens
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"))  // For API requests
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+// Configure user authentication using OpenID Connect
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
     .EnableTokenAcquisitionToCallDownstreamApi()
-    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))  // For login flows
     .AddInMemoryTokenCaches();
 
 builder.Services.AddAuthorization(options =>
@@ -84,14 +85,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();  // Needed for static files
 
-app.UseStaticFiles();  // Required for serving static files like CSS/JS for the login page
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapRazorPages();  // Ensures the login flow can work
-app.MapControllers();
+app.MapRazorPages();  // Needed for Razor Pages (UI)
+app.MapControllers(); // Needed for API endpoints
 
 app.Run();
