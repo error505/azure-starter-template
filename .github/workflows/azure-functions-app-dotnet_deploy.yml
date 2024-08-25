@@ -1,0 +1,53 @@
+name: Deploy Azure Function to Azure Function App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_NAME: 'itdapp-prod-function01' 
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './azure-function' 
+  DOTNET_VERSION: '8.0.x'
+  AZURE_RESOURCE_GROUP: 'iric_dev'
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    environment: dev
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+     
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: 'Resolve Project Dependencies Using Dotnet'
+      shell: pwsh # For Linux, use bash
+      run: |
+        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+        dotnet build --configuration Release --output ./output
+        popd
+
+    - name: 'Run Azure Functions Action'
+      uses: Azure/functions-action@v1
+      id: fa
+      with:
+        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+        package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+
+    - name: Set Azure Function App Environment Variables
+      run: |
+        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings \
+          AzureWebJobsStorage=${{ secrets.AZURE_WEBJOBS_STORAGE }} \
+          ServiceBusConnectionString=${{ secrets.SERVICE_BUS_CONNECTION_STRING }} \
+          CosmosDBConnectionString=${{ secrets.COSMOS_DB_CONNECTION_STRING }}
