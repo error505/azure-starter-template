@@ -90,8 +90,8 @@ resource asp 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: 'itdapp-prod-asp01'
   location: resourceGroup().location
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: 'B1'
+    tier: 'Basic'
   }
 }
 
@@ -105,7 +105,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 }
 
 resource keyVault 'Microsoft.KeyVault/vaults@2019-09-01' = {
-  name: 'itdapp-prod-keyvault01'
+  name: 'itdapp-prod-keyvault02'
   location: resourceGroup().location
   properties: {
     sku: {
