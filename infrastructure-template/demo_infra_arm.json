@@ -99,13 +99,32 @@
     {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2021-03-01",
-      "name": "itdapp-prod-asp01",
+      "name": "itdapp-prod-aspfunc01",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Y1",
         "tier": "Dynamic"
       },
       "properties": {}
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2021-03-01",
+      "name": "itdapp-prod-asp01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "S1",
+        "tier": "Standard",
+        "capacity": 1
+      },
+      "properties": {
+        "maximumElasticWorkerCount": 1,
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0
+      }
     },
     {
       "type": "Microsoft.Insights/components",
@@ -136,7 +155,7 @@
     },
     {
       "type": "Microsoft.ServiceBus/namespaces",
-      "apiVersion": "2023-01-01-preview",
+      "apiVersion": "2021-11-01",
       "name": "itdapp-prod-sbnamespace",
       "location": "westeurope",
       "sku": {
@@ -148,7 +167,7 @@
     },
     {
       "type": "Microsoft.ServiceBus/namespaces/topics",
-      "apiVersion": "2023-01-01-preview",
+      "apiVersion": "2021-11-01",
       "name": "itdapp-prod-sbnamespace/itdapp-prod-topic01",
       "dependsOn": [
         "[resourceId('Microsoft.ServiceBus/namespaces', 'itdapp-prod-sbnamespace')]"
@@ -301,14 +320,14 @@
         "type": "SystemAssigned"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', 'itdapp-prod-asp01')]",
+        "[resourceId('Microsoft.Web/serverfarms', 'itdapp-prod-aspfunc01')]",
         "[resourceId('Microsoft.Storage/storageAccounts', 'itdappprodstorage01')]",
         "[resourceId('Microsoft.ServiceBus/namespaces', 'itdapp-prod-sbnamespace')]",
         "[resourceId('Microsoft.ServiceBus/namespaces/topics', 'itdapp-prod-sbnamespace', 'itdapp-prod-topic01')]",
         "[resourceId('Microsoft.Insights/components', 'itdapp-prod-appinsights01')]"
       ],
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'itdapp-prod-asp01')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'itdapp-prod-aspfunc01')]",
         "siteConfig": {
           "appSettings": [
             {
