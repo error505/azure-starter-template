@@ -120,7 +120,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2019-09-01' = {
   }
 }
 
-resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2023-01-01-preview' = {
+resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = {
   name: 'itdapp-prod-sbnamespace'
   location: 'westeurope'
   sku: {
@@ -131,11 +131,9 @@ resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2023-01-01-preview
   }
 }
 
-resource serviceBusTopic 'Microsoft.ServiceBus/namespaces/topics@2023-01-01-preview' = {
-  name: 'itdapp-prod-sbnamespace/itdapp-prod-topic01'
-  dependsOn: [
-    serviceBusNamespace
-  ]
+resource serviceBusTopic 'Microsoft.ServiceBus/namespaces/topics@2021-11-01' = {
+  parent: serviceBusNamespace
+  name: 'itdapp-prod-topic01'
   properties: {}
 }
 
@@ -184,11 +182,8 @@ resource webApp 'Microsoft.Web/sites@2021-01-15' = {
 }
 
 resource appAuthConfig 'Microsoft.Web/sites/config@2021-01-15' = {
-  name: 'itdapp-prod-app01/authsettingsV2'
-  location: resourceGroup().location
-  dependsOn: [
-    webApp
-  ]
+  parent: webApp
+  name: 'authsettingsV2'
   properties: {
     platform: {
       enabled: true
@@ -245,10 +240,6 @@ resource staticWebApp 'Microsoft.Web/staticSites@2021-02-01' = {
     repositoryUrl: 'https://github.com/your-repo/your-repo.git'
     branch: 'main'
     repositoryToken: 'repo-token'
-    appLocation: '/'
-    apiLocation: 'api'
-    outputLocation: 'build'
-    defaultHostname: 'error505'
   }
   sku: {
     name: 'Free'
@@ -274,20 +265,13 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
   identity: {
     type: 'SystemAssigned'
   }
-  dependsOn: [
-    asp
-    storageAccount
-    serviceBusNamespace
-    serviceBusTopic
-    appInsights
-  ]
   properties: {
     serverFarmId: asp.id
     siteConfig: {
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${listKeys(storageAccount.id, '2021-06-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
         }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
@@ -299,7 +283,7 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
         }
         {
           name: 'COSMOS_DB_CONNECTION_STRING'
-          value: listKeys(cosmosDb.id, '2021-06-15').primaryMasterKey
+          value: cosmosDb.listKeys().primaryMasterKey
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
