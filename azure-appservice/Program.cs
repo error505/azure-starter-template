@@ -9,21 +9,22 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllersWithViews();  // Needed for views and Razor Pages
-builder.Services.AddRazorPages();  // Needed for Razor Pages (for UI)
-
-var clientId = builder.Configuration["AzureAd:ClientId"];
+builder.Services.AddControllersWithViews();  // For MVC and Razor Pages
+builder.Services.AddRazorPages();  // For Razor Pages (UI)
 
 // Configure API authentication using JWT Bearer tokens
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"))
+    .EnableTokenAcquisitionToCallDownstreamApi()
+    .AddInMemoryTokenCaches();
 
-// Configure user authentication using OpenID Connect
+// Configure user authentication using OpenID Connect with PKCE
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
     .EnableTokenAcquisitionToCallDownstreamApi()
     .AddInMemoryTokenCaches();
 
+// Add Razor Pages authorization
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
@@ -49,7 +50,7 @@ builder.Services.AddSwaggerGen(c =>
                 TokenUrl = new Uri($"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/oauth2/v2.0/token"),
                 Scopes = new Dictionary<string, string>
                 {
-                    { $"api://{clientId}/.default", "Access the API" }
+                    { $"api://{builder.Configuration["AzureAd:ClientId"]}/.default", "Access the API" }
                 }
             }
         }
@@ -66,7 +67,7 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "oauth2"
                 }
             },
-            new[] { $"api://{clientId}/.default" }
+            new[] { $"api://{builder.Configuration["AzureAd:ClientId"]}/.default" }
         }
     });
 });
@@ -80,20 +81,20 @@ if (app.Environment.IsDevelopment())
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
         c.RoutePrefix = string.Empty;
-        c.OAuthClientId(clientId);
+        c.OAuthClientId(builder.Configuration["AzureAd:ClientId"]);
         c.OAuthUsePkce();
     });
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();  // Needed for static files
+app.UseStaticFiles();  // Serve static files like CSS/JS
 
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapRazorPages();  // Needed for Razor Pages (UI)
-app.MapControllers(); // Needed for API endpoints
+app.MapRazorPages();  // For Razor Pages (UI)
+app.MapControllers(); // Map API controllers
 
 app.Run();
