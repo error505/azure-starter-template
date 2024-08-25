@@ -128,18 +128,16 @@ resource keyVault 'Microsoft.KeyVault/vaults@2019-09-01' = {
   }
 }
 
-resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = {
+resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2022-01-01-preview' = {
   name: 'itdapp-prod-sbnamespace'
   location: 'westeurope'
   sku: {
     name: 'Standard'
   }
-  properties: {
-    zoneRedundant: false
-  }
+  properties: {}
 }
 
-resource serviceBusTopic 'Microsoft.ServiceBus/namespaces/topics@2021-11-01' = {
+resource serviceBusTopic 'Microsoft.ServiceBus/namespaces/topics@2022-01-01-preview' = {
   parent: serviceBusNamespace
   name: 'itdapp-prod-topic01'
   properties: {}
