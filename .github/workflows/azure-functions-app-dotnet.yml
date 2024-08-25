@@ -45,5 +45,3 @@ jobs:
             AzureWebJobsStorage=${{ secrets.AZURE_WEBJOBS_STORAGE }} \
             ServiceBusConnectionString=${{ secrets.SERVICE_BUS_CONNECTION_STRING }} \
             CosmosDBConnectionString=${{ secrets.COSMOS_DB_CONNECTION_STRING }}
-        env:
-          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
