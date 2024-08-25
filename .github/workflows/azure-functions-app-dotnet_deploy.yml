@@ -31,7 +31,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: 'Resolve Project Dependencies Using Dotnet'
-      shell: pwsh # For Linux, use bash
+      shell: pwsh
       run: |
         pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
         dotnet build azure-function.csproj --configuration Release --output ./output
@@ -45,9 +45,12 @@ jobs:
         package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
         publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
 
+    - name: Set Azure Function App Runtime
+      run: |
+        az functionapp config set --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --runtime-version 8
+
     - name: Set Azure Function App Environment Variables
       run: |
-        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings \
-          AzureWebJobsStorage=${{ secrets.AZURE_WEBJOBS_STORAGE }} \
-          ServiceBusConnectionString=${{ secrets.SERVICE_BUS_CONNECTION_STRING }} \
-          CosmosDBConnectionString=${{ secrets.COSMOS_DB_CONNECTION_STRING }}
+        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings AzureWebJobsStorage=${{ secrets.AZURE_WEBJOBS_STORAGE }}
+        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings ServiceBusConnectionString=${{ secrets.ServiceBusConnectionString }}
+        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings CosmosDBConnectionString=${{ secrets.CosmosDBConnectionString }}
