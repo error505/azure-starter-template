@@ -95,6 +95,14 @@ resource asp 'Microsoft.Web/serverfarms@2021-03-01' = {
   }
 }
 
+resource func 'Microsoft.Web/serverfarms@2021-03-01' = {
+  name: 'itdapp-prod-aspfunc01'
+  location: resourceGroup().location
+  sku: {
+    name: 'Y1'
+    tier: 'Dynamic'
+  }
+}
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   name: 'itdapp-prod-appinsights01'
   location: resourceGroup().location
@@ -266,7 +274,7 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
     type: 'SystemAssigned'
   }
   properties: {
-    serverFarmId: asp.id
+    serverFarmId: func.id
     siteConfig: {
       appSettings: [
         {
