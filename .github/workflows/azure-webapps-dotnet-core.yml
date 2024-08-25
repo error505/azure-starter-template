@@ -1,0 +1,48 @@
+name: Deploy ASP.NET Core App to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '8.x'
+
+      - name: Install dependencies
+        run: dotnet restore
+
+      - name: Build the project
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish the project
+        run: dotnet publish --configuration Release --output ./publish --no-build
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: YourAppServiceName
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
+
+      - name: Set Azure App Service Environment Variables
+        run: |
+          az webapp config appsettings set --resource-group YourResourceGroup --name YourAppServiceName --settings \
+            AzureAd__Instance=${{ secrets.AZURE_AD_INSTANCE }} \
+            AzureAd__Domain=${{ secrets.AZURE_AD_DOMAIN }} \
+            AzureAd__TenantId=${{ secrets.AZURE_AD_TENANT_ID }} \
+            AzureAd__ClientId=${{ secrets.AZURE_AD_CLIENT_ID }} \
+            AzureAd__ClientSecret=${{ secrets.AZURE_AD_CLIENT_SECRET }} \
+            ServiceBusConnectionString=${{ secrets.SERVICE_BUS_CONNECTION_STRING }} \
+            ServiceBusTopicName=${{ secrets.SERVICE_BUS_TOPIC_NAME }}
+        env:
+          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
