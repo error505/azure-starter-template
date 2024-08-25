@@ -5,7 +5,7 @@ using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-namespace YourNamespace.Controllers
+namespace AppSerivce.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

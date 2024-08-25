@@ -1,0 +1,6 @@
+@azure_appservice_HostAddress = http://localhost:5187
+
+GET {{azure_appservice_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
