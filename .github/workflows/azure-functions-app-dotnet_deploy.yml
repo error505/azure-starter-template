@@ -50,7 +50,8 @@ jobs:
         az functionapp config set --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --net-framework-version v8.0
 
     - name: Set Azure Function App Environment Variables
+      shell: pwsh
       run: |
-        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings AzureWebJobsStorage=${{ secrets.AZURE_WEBJOBS_STORAGE }}
-        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings ServiceBusConnectionString=${{ secrets.ServiceBusConnectionString }}
-        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings CosmosDBConnectionString=${{ secrets.CosmosDBConnectionString }}
+        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings "AzureWebJobsStorage='DefaultEndpointsProtocol=https;AccountName=${{ secrets.AZURE_WEBJOBS_STORAGE }};AccountKey=${{ secrets.STORAGE_ACCOUNT_KEY }};EndpointSuffix=core.windows.net'"
+        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings "ServiceBusConnectionString=${{ secrets.ServiceBusConnectionString }}"
+        az functionapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --settings "CosmosDBConnectionString=${{ secrets.CosmosDBConnectionString }}"
