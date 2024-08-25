@@ -1,0 +1,49 @@
+name: Deploy Azure Function to Azure Function App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '8.x'
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install dependencies
+        run: dotnet restore azure-function/azure-function.csproj 
+
+      - name: Build the project
+        run: dotnet build azure-function/azure-function.csproj --configuration Release --no-restore 
+
+      - name: Publish the project
+        run: dotnet publish azure-function/azure-function.csproj --configuration Release --output ./azure-function/publish --no-build
+
+      - name: Deploy to Azure Function App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: itdapp-prod-function01
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          package: ./azure-function/publish
+
+      - name: Set Azure Function App Environment Variables
+        run: |
+          az functionapp config appsettings set --resource-group iric_dev --name itdapp-prod-function01 --settings \
+            AzureWebJobsStorage=${{ secrets.AZURE_WEBJOBS_STORAGE }} \
+            ServiceBusConnectionString=${{ secrets.SERVICE_BUS_CONNECTION_STRING }} \
+            CosmosDBConnectionString=${{ secrets.COSMOS_DB_CONNECTION_STRING }}
+        env:
+          AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
