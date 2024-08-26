@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace AppSerivce.Controllers
 {
@@ -38,11 +39,22 @@ namespace AppSerivce.Controllers
 
         private async Task SendMessageToServiceBusAsync(string messageContent)
         {
+            // Create the JSON object with MessageId and Content
+            var messageObject = new
+            {
+                MessageId = Guid.NewGuid().ToString(), // Generate a unique MessageId
+                Content = messageContent
+            };
+
+            // Serialize the object to JSON string
+            string jsonMessage = JsonConvert.SerializeObject(messageObject);
+
+            // Create a ServiceBusMessage with the JSON content
+            ServiceBusMessage message = new ServiceBusMessage(Encoding.UTF8.GetBytes(jsonMessage));
+
             await using (var client = new ServiceBusClient(_serviceBusConnectionString))
             {
                 ServiceBusSender sender = client.CreateSender(_topicName);
-
-                ServiceBusMessage message = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageContent));
                 await sender.SendMessageAsync(message);
             }
         }

@@ -50,14 +50,30 @@ namespace AzureFunction.Functions
             var container = _cosmosClient.GetContainer(_databaseId, _containerId);
 
             // Ensure the Cosmos DB container exists
-            await _cosmosClient.GetDatabase(_databaseId).CreateContainerIfNotExistsAsync(new ContainerProperties(_containerId, "/partitionKey"));
+            await _cosmosClient.GetDatabase(_databaseId).CreateContainerIfNotExistsAsync(new ContainerProperties(_containerId, "/MessageId"));
 
-            // Deserialize the message into a dynamic object
-            dynamic document = JsonConvert.DeserializeObject(message);
+            dynamic document;
 
-            // Set the partition key, assuming it's part of the document (e.g., "partitionKey" is a property in the message)
-            await container.CreateItemAsync(document, new PartitionKey(document.partitionKey.ToString()));
+            try
+            {
+                // Try to deserialize the message into a dynamic object
+                document = JsonConvert.DeserializeObject(message);
+            }
+            catch (JsonReaderException)
+            {
+                // If deserialization fails, create a simple document with the message as-is
+                document = new
+                {
+                    MessageId = Guid.NewGuid().ToString(),
+                    Content = message
+                };
+            }
+
+            // Save the document to Cosmos DB with a partition key
+            await container.CreateItemAsync(document, new PartitionKey(document.MessageId.ToString()));
         }
+
+
 
         private async Task SaveConfirmationToBlobAsync(string message)
         {
