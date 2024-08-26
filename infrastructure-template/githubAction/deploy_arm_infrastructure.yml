@@ -1,0 +1,43 @@
+name: Deploy ARM Template to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: 
+
+jobs:
+  deploy-arm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Register Microsoft.ServiceBus Provider
+        run: |
+          az provider register --namespace Microsoft.ServiceBus
+          for i in {1..10}; do
+            status=$(az provider show --namespace Microsoft.ServiceBus --query "registrationState" -o tsv)
+            echo "Microsoft.ServiceBus registration status: $status"
+            if [ "$status" == "Registered" ]; then
+              break
+            fi
+            echo "Waiting for Microsoft.ServiceBus to be fully registered..."
+            sleep 10
+          done
+
+      - name: Deploy ARM Template
+        run: |
+          az deployment group create \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --template-file arm/main.json \
+            --parameters @arm/parameters.json \
+            --parameters aadClientId=${{ secrets.AZURE_AD_CLIENT_ID }}
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
