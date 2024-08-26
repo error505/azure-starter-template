@@ -49,12 +49,13 @@ builder.Services.AddSwaggerGen(c =>
                 AuthorizationUrl = new Uri($"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/oauth2/v2.0/authorize"),
                 TokenUrl = new Uri($"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/oauth2/v2.0/token"),
                 Scopes = new Dictionary<string, string>
-                {
-                    { $"api://{builder.Configuration["AzureAd:ClientId"]}/.default", "Access the API" }
-                }
+            {
+                { $"api://{builder.Configuration["AzureAd:ClientId"]}/.default", "Access the API" }
+            }
             }
         }
     });
+
 
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
@@ -72,19 +73,25 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddLogging(logging =>
+{
+    logging.ClearProviders();
+    logging.AddConsole();
+    logging.AddDebug();
+});
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-        c.RoutePrefix = string.Empty;
-        c.OAuthClientId(builder.Configuration["AzureAd:ClientId"]);
-        c.OAuthUsePkce();
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+    c.RoutePrefix = string.Empty;
+    c.OAuthClientId(builder.Configuration["AzureAd:ClientId"]);
+    c.OAuthUsePkce();
+});
+
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();  // Serve static files like CSS/JS
