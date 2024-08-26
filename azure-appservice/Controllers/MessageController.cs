@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
+using azure_appservice;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -24,11 +25,16 @@ namespace AppSerivce.Controllers
         }
 
         [HttpPost("send")]
-        public async Task<IActionResult> SendMessage([FromBody] string messageContent)
+        public async Task<IActionResult> SendMessage([FromBody] MessageRequest request)
         {
+            if (request == null || string.IsNullOrEmpty(request.MessageContent))
+            {
+                return BadRequest("The messageContent field is required.");
+            }
+
             try
             {
-                await SendMessageToServiceBusAsync(messageContent);
+                await SendMessageToServiceBusAsync(request.MessageContent);
                 return Ok("Message sent to Service Bus topic successfully.");
             }
             catch (Exception ex)
