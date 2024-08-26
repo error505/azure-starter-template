@@ -18,7 +18,6 @@ namespace AzureFunction.Functions
         private readonly BlobServiceClient _blobServiceClient;
         private readonly string _databaseId;
         private readonly string _containerId;
-        private readonly string _blobContainerName;
 
         public ServiceBusMessageProcessor(CosmosClient cosmosClient, BlobServiceClient blobServiceClient, IConfiguration configuration)
         {
@@ -28,7 +27,6 @@ namespace AzureFunction.Functions
             // Load configuration variables
             _databaseId = configuration["CosmosDBDatabaseId"];
             _containerId = configuration["CosmosDBContainerId"];
-            _blobContainerName = configuration["BlobContainerName"];
         }
 
         [FunctionName("ProcessServiceBusMessage")]
@@ -40,9 +38,6 @@ namespace AzureFunction.Functions
 
             // Save to Cosmos DB
             await SaveToCosmosDbAsync(mySbMsg);
-
-            // Save confirmation to Blob Storage
-            await SaveConfirmationToBlobAsync(mySbMsg);
         }
 
         private async Task SaveToCosmosDbAsync(string message)
@@ -58,35 +53,31 @@ namespace AzureFunction.Functions
             {
                 // Try to deserialize the message into a dynamic object
                 document = JsonConvert.DeserializeObject(message);
+
+                // Ensure the document has an "id" property
+                if (document.id == null)
+                {
+                    document.id = Guid.NewGuid().ToString(); // Generate a new id if missing
+                }
+
+                if (document.MessageId == null)
+                {
+                    document.MessageId = Guid.NewGuid().ToString(); // Ensure MessageId is set
+                }
             }
             catch (JsonReaderException)
             {
                 // If deserialization fails, create a simple document with the message as-is
                 document = new
                 {
-                    MessageId = Guid.NewGuid().ToString(),
+                    id = Guid.NewGuid().ToString(), // Generate a new id
+                    MessageId = Guid.NewGuid().ToString(), // Generate a new MessageId
                     Content = message
                 };
             }
 
-            // Save the document to Cosmos DB with a partition key
+            // Save the document to Cosmos DB with the "id" and "MessageId" properties
             await container.CreateItemAsync(document, new PartitionKey(document.MessageId.ToString()));
-        }
-
-
-
-        private async Task SaveConfirmationToBlobAsync(string message)
-        {
-            BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_blobContainerName);
-            await containerClient.CreateIfNotExistsAsync();
-
-            string blobName = $"{Guid.NewGuid()}.txt";
-            BlobClient blobClient = containerClient.GetBlobClient(blobName);
-
-            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("Processed message: " + message)))
-            {
-                await blobClient.UploadAsync(stream);
-            }
         }
     }
 }
