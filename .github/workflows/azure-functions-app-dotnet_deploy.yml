@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: 'itdapp-prod-function01' 
+  AZURE_FUNCTIONAPP_NAME: 'azdm-prod-function01' 
   AZURE_FUNCTIONAPP_PACKAGE_PATH: './azure-function' 
   DOTNET_VERSION: '8.0.x'
-  AZURE_RESOURCE_GROUP: 'iric_dev'
+  AZURE_RESOURCE_GROUP: 'iric_dev2'
 
 jobs:
   build-and-deploy:
